@@ -61,7 +61,7 @@ function startGameLogic(
         bgImg.src = "/images/flappy-bird-bg.png";
 
         // Set velocity based on level
-        let velocityX;
+        let velocityX: number;
         switch (level) {
             case "beginner":
                 velocityX = -3;
@@ -193,7 +193,6 @@ function startGameLogic(
         const moveBird = (e: KeyboardEvent) => {
             if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyX") {
                 velocityY = -7;
-
                 if (gameOverRef.current) {
                     bird.y = birdY;
                     pipeArray = [];
@@ -229,6 +228,7 @@ const FlappyBirdGame: React.FC = () => {
     const gameOverRef = useRef(false);
     const [score, setScore] = useState(0);
     const [level, setLevel] = useState("");
+    const [mode, setMode] = useState<"single" | "multi" | "">("");
 
     const handleStartGame = (selectedLevel: string) => {
         setLevel(selectedLevel);
@@ -239,9 +239,67 @@ const FlappyBirdGame: React.FC = () => {
 
     useEffect(() => {
         if (canvasRef.current && gameStarted) {
-            startGame(canvasRef, setGameStarted, setGameOver, gameOverRef, setScore, level);
+            const canvas = canvasRef.current;
+            const context = canvas.getContext("2d");
+
+            if (context) {
+                const birdImg = new Image();
+                birdImg.src = "/images/flappybird.png";
+
+                const bgImg = new Image();
+                bgImg.src = "/images/flappy-bird-bg.png";
+
+                const bird = {
+                    x: canvas.width / 8,
+                    y: canvas.height / 2,
+                    width: 34,
+                    height: 24,
+                };
+
+                bgImg.onload = () => {
+                    context.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+                    context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+                    context.font = "bold 12px serif";
+                    context.fillStyle = "black";
+                    context.textAlign = "center";
+                    context.fillText("Press S to Start", canvas.width / 2, canvas.height / 2);
+                };
+
+                const handleKeyPress = (e: KeyboardEvent) => {
+                    if (e.code === "KeyS") {
+                        console.log("Starting game");
+                        startGame(canvasRef, setGameStarted, setGameOver, gameOverRef, setScore, level);
+                        document.removeEventListener("keydown", handleKeyPress);
+                    }
+                };
+
+                document.addEventListener("keydown", handleKeyPress);
+
+                return () => {
+                    document.removeEventListener("keydown", handleKeyPress);
+                };
+            }
         }
     }, [canvasRef, gameStarted, level]);
+
+    if (mode === "") {
+        return (
+            <div className="p-4 text-center">
+                <h1 className="text-3xl mb-4">Flappy Bird</h1>
+                <button className="mx-2 px-4 py-2 bg-green-500 text-white rounded" onClick={() => setMode("single")}>Single Player</button>
+                <button className="mx-2 px-4 py-2 bg-blue-500 text-white rounded" onClick={() => setMode("multi")}>Multiplayer</button>
+            </div>
+        );
+    }
+
+    if (mode === "multi") {
+        return (
+            <div className="p-4 text-center">
+                <h1 className="text-3xl mb-4 text-red-500 font-bold">GAME OVER</h1>
+                <p className="text-xl text-red-500">Whoops you lost 🤠</p>
+            </div>
+        );
+    }
 
     if (!gameStarted) {
         return (
